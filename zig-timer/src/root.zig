@@ -4,7 +4,7 @@ const expect = std.testing.expect;
 pub const HMS = struct { hours: u8, minutes: u8, seconds: u8 };
 pub const TimeError = error{ InvalidHour, InvalidMinutes, InvalidSeconds, TotalSecondsExceeded };
 
-const MAX_ALLOWED_TOTAL_SECONDS = 23 * 3600 + 60 * 60 + 60;
+const MAX_ALLOWED_TOTAL_SECONDS = 23 * 3600 + 60 * 60;
 
 // Prints the remaining time after every second
 pub fn runTimer(duration: u64) !void {
@@ -37,7 +37,13 @@ fn convertHMSToSeconds(hms: HMS) !u64 {
     const hour_seconds = hms.hours * @as(u64, std.time.s_per_hour);
     const min_seconds = hms.minutes * @as(u64, std.time.s_per_min);
 
-    return hour_seconds + min_seconds + hms.seconds;
+    const total_seconds = hour_seconds + min_seconds + hms.seconds;
+
+    if (total_seconds > MAX_ALLOWED_TOTAL_SECONDS) {
+        return TimeError.TotalSecondsExceeded;
+    } else {
+        return total_seconds;
+    }
 }
 
 pub fn validateSeconds(seconds: u64) !void {
@@ -76,7 +82,7 @@ test "convertHMSToSeconds_Invalid" {
     const hms: HMS = .{
         .hours = 23,
         .minutes = 60,
-        .seconds = 61,
+        .seconds = 1,
     };
-    try std.testing.expectError(TimeError.InvalidSeconds, convertHMSToSeconds(hms));
+    try std.testing.expectError(TimeError.TotalSecondsExceeded, convertHMSToSeconds(hms));
 }
